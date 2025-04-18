@@ -3,11 +3,19 @@ import pickle
 import numpy as np
 import os
 
-app = Flask(__name__, static_folder='../static', template_folder='../templates')
+app = Flask(__name__,
+    static_folder=os.path.join(os.path.dirname(__file__), '../static'),
+    template_folder=os.path.join(os.path.dirname(__file__), '../templates')
+)
 
-# Load model
-model_path = os.path.join(os.path.dirname(__file__), 'model.pkl')
-model = pickle.load(open(model_path, 'rb'))
+# Load model with error handling
+model_path = os.path.join(os.path.dirname(__file__), '../model.pkl')
+try:
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
+except Exception as e:
+    print(f"Error loading model: {str(e)}")
+    model = None
 
 @app.route('/')
 def home():
@@ -17,6 +25,9 @@ def home():
 def predict():
     if request.method == 'POST':
         try:
+            if model is None:
+                raise Exception("Model not loaded")
+                
             # Get form data
             gender = request.form.get('gender')
             married = request.form.get('married')
@@ -61,6 +72,3 @@ def predict():
             return render_template('prediction.html', prediction_text=f"Error: {str(e)}")
 
     return render_template('prediction.html')
-
-# Vercel requires an app variable in api.py
-app = app
